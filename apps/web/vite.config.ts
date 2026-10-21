@@ -5,5 +5,10 @@ import { defineConfig } from 'vite'
 
 export default defineConfig({
   server: { port: 3000 },
-  plugins: [tanstackStart(), nitro(), viteReact()],
+  plugins: [
+    tanstackStart(),
+    // Traced deps are copied from Bazel's read-only store; make the copies writable.
+    nitro({ traceOpts: { chmod: 0o644 } }),
+    viteReact(),
+  ],
 })

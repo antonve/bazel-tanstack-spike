@@ -10,3 +10,6 @@ packageExtensions:
   nitro:
     dependencies:
       pathe: ^2.0.3
+
+# rules_js requires an explicit list; no dependency needs install scripts.
+allowBuilds: {}

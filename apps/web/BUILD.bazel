@@ -1,0 +1,56 @@
+load("@aspect_rules_js//js:defs.bzl", "js_binary", "js_run_binary")
+load("@aspect_rules_ts//ts:defs.bzl", "ts_config", "ts_project")
+load("@bazel_lib//lib:directory_path.bzl", "directory_path")
+load("@npm//:defs.bzl", "npm_link_all_packages")
+
+npm_link_all_packages(name = "node_modules")
+
+SRCS = glob(["src/**/*.ts*"])
+
+ts_config(
+    name = "tsconfig",
+    src = "tsconfig.json",
+    deps = ["//:tsconfig_base"],
+)
+
+# no_emit generates :app_typecheck_test.
+ts_project(
+    name = "app",
+    srcs = SRCS + ["vite.config.ts"],
+    no_emit = True,
+    tsconfig = ":tsconfig",
+    deps = [":node_modules"],
+)
+
+js_binary(
+    name = "vite_build",
+    data = [":node_modules"],
+    entry_point = "vite-build.mjs",
+)
+
+js_run_binary(
+    name = "build",
+    srcs = SRCS + [
+        "package.json",
+        "vite.config.ts",
+        ":tsconfig",
+    ],
+    chdir = package_name(),
+    # Default set in .bazelrc; override with --define=VITE_BUILD_CHANNEL=<value>.
+    env = {"VITE_BUILD_CHANNEL": "$(VITE_BUILD_CHANNEL)"},
+    out_dirs = [".output"],
+    tool = ":vite_build",
+)
+
+directory_path(
+    name = "server_entry",
+    directory = ":build",
+    path = "server/index.mjs",
+)
+
+# bazel run //apps/web:server (listens on $PORT, default 3000)
+js_binary(
+    name = "server",
+    data = [":build"],
+    entry_point = ":server_entry",
+)

@@ -1,0 +1,9 @@
+common --enable_bzlmod
+# Hermetic-ish JS: never let actions see the host's node_modules or PATH-installed tools.
+build --incompatible_strict_action_env
+# Show test output on failure.
+test --test_output=errors
+# Silence the opt-out telemetry prompt from aspect rules.
+common --repo_env=DO_NOT_TRACK=1
+# Build-time value inlined by Vite into apps/web (import.meta.env.VITE_BUILD_CHANNEL).
+build --define=VITE_BUILD_CHANNEL=bazel-local
