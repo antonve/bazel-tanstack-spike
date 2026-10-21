@@ -18,7 +18,7 @@ function RootDocument({ children }: { children: ReactNode }) {
       </head>
       <body>
         <nav>
-          <Link to="/">Home</Link> | <Link to="/about">About</Link>
+          <Link to="/">Home</Link> | <Link to="/about">About</Link> | <Link to="/server">Server</Link>
         </nav>
         {children}
         <Scripts />
