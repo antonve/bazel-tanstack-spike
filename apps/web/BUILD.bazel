@@ -39,7 +39,10 @@ js_run_binary(
     ],
     chdir = package_name(),
     # Default set in .bazelrc; override with --define=VITE_BUILD_CHANNEL=<value>.
-    env = {"VITE_BUILD_CHANNEL": "$(VITE_BUILD_CHANNEL)"},
+    env = {
+        "SOURCE_DATE_EPOCH": "0",
+        "VITE_BUILD_CHANNEL": "$(VITE_BUILD_CHANNEL)",
+    },
     out_dirs = [".output"],
     tool = ":vite_build",
 )
