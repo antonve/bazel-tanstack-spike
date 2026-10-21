@@ -1,0 +1,15 @@
+packages:
+  - apps/*
+  - packages/*
+
+# rules_js lays out node_modules like pnpm with hoisting disabled; match it outside Bazel.
+hoist: false
+
+packageExtensions:
+  # nitro's dev error handler imports pathe without declaring it; hoist: false exposes that.
+  nitro:
+    dependencies:
+      pathe: ^2.0.3
+
+# rules_js requires an explicit list; no dependency needs install scripts.
+allowBuilds: {}
