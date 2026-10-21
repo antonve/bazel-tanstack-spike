@@ -24,7 +24,8 @@ ts_project(
 
 js_binary(
     name = "vite_build",
-    data = [":node_modules"],
+    # Only vite runs in the exec config; plugins and app deps come from srcs (target config).
+    data = [":node_modules/vite"],
     entry_point = "vite-build.mjs",
 )
 
@@ -33,6 +34,7 @@ js_run_binary(
     srcs = SRCS + [
         "package.json",
         "vite.config.ts",
+        ":node_modules",
         ":tsconfig",
     ],
     chdir = package_name(),
