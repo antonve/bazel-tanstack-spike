@@ -7,7 +7,7 @@ import { defineConfig, type Plugin } from 'vite'
 
 // With SOURCE_DATE_EPOCH set, make the server output byte-reproducible: drop the absolute
 // project root that Start embeds in its manifest, pin public-asset mtimes that Nitro records,
-// and rename Nitro's path-derived handler identifiers.
+// sort and rename what Nitro emits in nondeterministic order or from absolute paths.
 function reproducible(epoch = process.env.SOURCE_DATE_EPOCH): Plugin | false {
   if (epoch === undefined) return false
   let root = ''
@@ -19,6 +19,13 @@ function reproducible(epoch = process.env.SOURCE_DATE_EPOCH): Plugin | false {
       const publicDir = join(root, '.output/public')
       for (const file of readdirSync(publicDir, { recursive: true, encoding: 'utf8' }))
         utimesSync(join(publicDir, file), +epoch, +epoch)
+    },
+    transform(code, id) {
+      // Nitro collects public assets in parallel, so their order varies between builds.
+      if (!id.includes('#nitro/virtual/public-assets-data')) return null
+      const assets = JSON.parse(code.replace(/^export default /, '').replace(/;\s*$/, ''))
+      const sorted = Object.fromEntries(Object.entries(assets).sort(([a], [b]) => (a < b ? -1 : 1)))
+      return `export default ${JSON.stringify(sorted, null, 2)};`
     },
     renderChunk(code) {
       let out = code.replaceAll(root, '')
