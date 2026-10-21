@@ -6,7 +6,8 @@ import { nitro } from 'nitro/vite'
 import { defineConfig, type Plugin } from 'vite'
 
 // With SOURCE_DATE_EPOCH set, make the server output byte-reproducible: drop the absolute
-// project root that Start embeds in its manifest and pin public-asset mtimes that Nitro records.
+// project root that Start embeds in its manifest, pin public-asset mtimes that Nitro records,
+// and rename Nitro's path-derived handler identifiers.
 function reproducible(epoch = process.env.SOURCE_DATE_EPOCH): Plugin | false {
   if (epoch === undefined) return false
   let root = ''
@@ -19,7 +20,18 @@ function reproducible(epoch = process.env.SOURCE_DATE_EPOCH): Plugin | false {
       for (const file of readdirSync(publicDir, { recursive: true, encoding: 'utf8' }))
         utimesSync(join(publicDir, file), +epoch, +epoch)
     },
-    renderChunk: (code) => (code.includes(root) ? code.replaceAll(root, '') : null),
+    renderChunk(code) {
+      let out = code.replaceAll(root, '')
+      // Nitro names route handlers after a hash of their absolute path; number them instead.
+      if (this.environment.name === 'nitro') {
+        const ids = new Map<string, string>()
+        out = out.replace(/\b_(lazy_)?[0-9a-f]{16}\b/g, (id, lazy = '') => {
+          if (!ids.has(id)) ids.set(id, `_${lazy}handler${ids.size}`)
+          return ids.get(id)!
+        })
+      }
+      return out === code ? null : out
+    },
   }
 }
 
