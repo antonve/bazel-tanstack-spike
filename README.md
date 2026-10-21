@@ -1,6 +1,7 @@
 # bazel-tanstack-spike
 
-A TanStack Start app (`apps/web`, SSR + Nitro) and a shared React package
+A TanStack Start app (`apps/web`: SSR, a server function, an API route and
+middleware, served by Nitro) and a shared React package
 (`packages/ui`) in a pnpm workspace, built either with plain pnpm or with Bazel
 (rules_js / rules_ts). `pnpm-lock.yaml` is the single source of truth for
 dependencies.
@@ -41,6 +42,16 @@ pnpm bazel build //apps/web:build --define=VITE_BUILD_CHANNEL=staging
 ```
 
 The build output is `bazel-bin/apps/web/.output`.
+
+## Container image
+
+`//apps/web:image` is an OCI image built by Bazel: the `node:24-slim` base
+(pinned by digest in `MODULE.bazel`) plus the build output under `/app`.
+
+```sh
+pnpm bazel run //apps/web:image_load    # loads bazel-tanstack-spike:latest into Docker
+docker run --rm -p 127.0.0.1:3000:3000 bazel-tanstack-spike:latest
+```
 
 ## Route tree
 

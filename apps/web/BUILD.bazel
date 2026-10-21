@@ -1,6 +1,8 @@
 load("@aspect_rules_js//js:defs.bzl", "js_binary", "js_run_binary")
 load("@aspect_rules_ts//ts:defs.bzl", "ts_config", "ts_project")
 load("@bazel_lib//lib:directory_path.bzl", "directory_path")
+load("@rules_oci//oci:defs.bzl", "oci_image", "oci_load")
+load("@tar.bzl", "mutate", "tar")
 load("@npm//:defs.bzl", "npm_link_all_packages")
 
 npm_link_all_packages(name = "node_modules")
@@ -58,4 +60,38 @@ js_binary(
     name = "server",
     data = [":build"],
     entry_point = ":server_entry",
+)
+
+# Nitro bundles the server, so the image is the node base plus .output under /app.
+tar(
+    name = "output_layer",
+    srcs = [":build"],
+    mutate = mutate(
+        package_dir = "app",
+        strip_prefix = package_name() + "/.output",
+    ),
+)
+
+oci_image(
+    name = "image",
+    base = "@node_24_slim",
+    entrypoint = [
+        "node",
+        "/app/server/index.mjs",
+    ],
+    env = {
+        "NODE_ENV": "production",
+        "PORT": "3000",
+    },
+    exposed_ports = ["3000/tcp"],
+    tars = [":output_layer"],
+    user = "node",
+    workdir = "/app",
+)
+
+# bazel run //apps/web:image_load loads bazel-tanstack-spike:latest into the local Docker daemon.
+oci_load(
+    name = "image_load",
+    image = ":image",
+    repo_tags = ["bazel-tanstack-spike:latest"],
 )
